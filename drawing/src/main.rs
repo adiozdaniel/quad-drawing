@@ -28,6 +28,9 @@ fn main() {
     let pentagon = gs::Pentagon::random(image.width, image.height);
     pentagon.draw(&mut image);
 
+    let cube = gs::Cubes::random(image.width, image.height);
+    cube.draw(&mut image);
+
     raster::save(&image, "image.png").unwrap();
 }
 
