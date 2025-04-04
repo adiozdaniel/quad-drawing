@@ -2,14 +2,13 @@ use raster::{Color, Image};
 use rand::Rng;
 
 pub trait Drawable {
-    fn draw(&self, image: &mut Image, color: &Color);
+    fn draw(&self, image: &mut Image);
 }
 
 pub trait Displayable {
-    fn display(&mut self, x: i32, y: i32, color: &Color);
+    fn display(&mut self, x: i32, y: i32, color: Color);
 }
 
-// Point
 #[derive(Clone)]
 pub struct Point {
     pub x: i32,
@@ -31,165 +30,259 @@ impl Point {
 }
 
 impl Drawable for Point {
-    fn draw(&self, image: &mut Image, color: &Color) {
-        image.display(self.x, self.y, color);
+    fn draw(&self, image: &mut Image) {
+        let color = Color::rgb(
+            rand::thread_rng().gen_range(50..200),
+            rand::thread_rng().gen_range(50..200),
+            rand::thread_rng().gen_range(50..200),
+        );
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                image.display(self.x + dx, self.y + dy, color.clone());
+            }
+        }
     }
 }
 
-// Line
 pub struct Line {
     start: Point,
     end: Point,
+    thickness: i32,
 }
 
 impl Line {
-    pub fn new(p1: &Point, p2: &Point) -> Self {
+       pub fn new(_p1: &Point, _p2: &Point) -> Self {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+        let mut rng = rand::thread_rng();
+        let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+
+        let start = Point::random(1000, 1000);
+        let (dx, dy) = if count == 0 {
+            // First line: long
+            (
+                rng.gen_range(300..500),
+                rng.gen_range(300..500),
+            )
+        } else {
+            // Other lines: short but not tiny
+            (
+                rng.gen_range(50..120),
+                rng.gen_range(50..120),
+            )
+        };
+
+        let end = Point::new(
+            (start.x + dx).min(999),
+            (start.y + dy).min(999),
+        );
+
         Line {
-            start: p1.clone(),
-            end: p2.clone(),
+            start,
+            end,
+            thickness: rng.gen_range(2..5),
         }
     }
 
     pub fn random(width: i32, height: i32) -> Self {
-        let p1 = Point::random(width, height);
-        let p2 = Point::random(width, height);
-        Line::new(&p1, &p2)
+        Line {
+            start: Point::random(width, height),
+            end: Point::random(width, height),
+            thickness: rand::thread_rng().gen_range(2..5),
+        }
+    }
+
+    pub fn from_points(p1: &Point, p2: &Point) -> Self {
+        Line {
+            start: p1.clone(),
+            end: p2.clone(),
+            thickness: rand::thread_rng().gen_range(2..5),
+        }
     }
 }
 
 impl Drawable for Line {
-    fn draw(&self, image: &mut Image, color: &Color) {
-        let dx = (self.end.x - self.start.x).abs();
-        let dy = (self.end.y - self.start.y).abs();
-        let sx = if self.start.x < self.end.x { 1 } else { -1 };
-        let sy = if self.start.y < self.end.y { 1 } else { -1 };
-        let mut err = dx - dy;
-
-        let (mut x, mut y) = (self.start.x, self.start.y);
-
-        loop {
-            image.display(x, y, color);
-            if x == self.end.x && y == self.end.y {
-                break;
-            }
-            let e2 = 2 * err;
-            if e2 > -dy {
-                err -= dy;
-                x += sx;
-            }
-            if e2 < dx {
-                err += dx;
-                y += sy;
+    fn draw(&self, image: &mut Image) {
+        let color = Color::rgb(
+            rand::thread_rng().gen_range(50..200),
+            rand::thread_rng().gen_range(50..200),
+            rand::thread_rng().gen_range(50..200),
+        );
+        
+        for t in 0..self.thickness {
+            let offset = t - self.thickness/2;
+            let dx = (self.end.x - self.start.x).abs();
+            let dy = (self.end.y - self.start.y).abs();
+            let sx = if self.start.x < self.end.x { 1 } else { -1 };
+            let sy = if self.start.y < self.end.y { 1 } else { -1 };
+            let mut err = dx - dy;
+            let (mut x, mut y) = (self.start.x, self.start.y);
+            
+            loop {
+                if dx > dy {
+                    image.display(x, y + offset, color.clone());
+                } else {
+                    image.display(x + offset, y, color.clone());
+                }
+                
+                if x == self.end.x && y == self.end.y { break; }
+                let e2 = 2 * err;
+                if e2 > -dy { err -= dy; x += sx; }
+                if e2 < dx { err += dx; y += sy; }
             }
         }
     }
 }
 
-// Rectangle
 pub struct Rectangle {
-    top_left: Point,
-    bottom_right: Point,
+    rects: Vec<(Point, Point)>,
 }
 
 impl Rectangle {
-    pub fn new(p1: &Point, p2: &Point) -> Self {
-        Rectangle {
-            top_left: Point::new(p1.x.min(p2.x), p1.y.min(p2.y)),
-            bottom_right: Point::new(p1.x.max(p2.x), p1.y.max(p2.y)),
+    pub fn new(_p1: &Point, _p2: &Point) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut rects = Vec::new();
+        
+        // Generate 2-3 random rectangles at different positions
+        for _ in 0..rng.gen_range(2..4) {
+            let width = rng.gen_range(100..250);
+            let height = rng.gen_range(80..180);
+            let pos = Point::random(800, 800);
+            rects.push((
+                pos.clone(),
+                Point::new(pos.x + width, pos.y + height)
+            ));
         }
+        
+        Rectangle { rects }
     }
 }
 
 impl Drawable for Rectangle {
-    fn draw(&self, image: &mut Image, color: &Color) {
-        let top_right = Point::new(self.bottom_right.x, self.top_left.y);
-        let bottom_left = Point::new(self.top_left.x, self.bottom_right.y);
-
-        Line::new(&self.top_left, &top_right).draw(image, color);
-        Line::new(&top_right, &self.bottom_right).draw(image, color);
-        Line::new(&self.bottom_right, &bottom_left).draw(image, color);
-        Line::new(&bottom_left, &self.top_left).draw(image, color);
+    fn draw(&self, image: &mut Image) {
+        for (p1, p2) in &self.rects {
+            let color = Color::rgb(
+                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(50..200),
+            );
+            
+            let top_right = Point::new(p2.x, p1.y);
+            let bottom_left = Point::new(p1.x, p2.y);
+            
+            Line::new(p1, &top_right).draw(image);
+            Line::new(&top_right, p2).draw(image);
+            Line::new(p2, &bottom_left).draw(image);
+            Line::new(&bottom_left, p1).draw(image);
+        }
     }
 }
 
-// Triangle
 pub struct Triangle {
-    a: Point,
-    b: Point,
-    c: Point,
+    tris: Vec<(Point, Point, Point)>,
 }
 
 impl Triangle {
-    pub fn new(a: &Point, b: &Point, c: &Point) -> Self {
-        Triangle {
-            a: a.clone(),
-            b: b.clone(),
-            c: c.clone(),
+    pub fn new(_a: &Point, _b: &Point, _c: &Point) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut tris = Vec::new();
+        
+        // Generate 2-3 random triangles at different positions
+        for _ in 0..rng.gen_range(2..4) {
+            let base = Point::random(800, 800);
+            let height = rng.gen_range(80..180);
+            let width = rng.gen_range(60..150);
+            
+            tris.push((
+                base.clone(),
+                Point::new(base.x + width, base.y),
+                Point::new(base.x + width/2, base.y - height)
+            ));
         }
+        
+        Triangle { tris }
     }
 }
 
 impl Drawable for Triangle {
-    fn draw(&self, image: &mut Image, color: &Color) {
-        Line::new(&self.a, &self.b).draw(image, color);
-        Line::new(&self.b, &self.c).draw(image, color);
-        Line::new(&self.c, &self.a).draw(image, color);
+    fn draw(&self, image: &mut Image) {
+        for (a, b, c) in &self.tris {
+            let color = Color::rgb(
+                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(50..200),
+            );
+            
+            Line::new(a, b).draw(image);
+            Line::new(b, c).draw(image);
+            Line::new(c, a).draw(image);
+        }
     }
 }
 
-// Circle
 pub struct Circle {
-    center: Point,
-    radius: i32,
+    circles: Vec<(Point, i32)>,
 }
 
 impl Circle {
-    // Allow dead code since this function is not currently used.
-    #[allow(dead_code)]
-    pub fn new(center: &Point, radius: i32) -> Self {
-        Circle {
-            center: center.clone(),
-            radius,
+    pub fn new(_center: &Point, _radius: i32) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut circles = Vec::new();
+        
+        // Generate 1 random circle at a random position
+        for _ in 0..rng.gen_range(1..2) {
+            circles.push((
+                Point::random(900, 900),
+                rng.gen_range(50..150)
+            ));
         }
+        
+        Circle { circles }
     }
 
     pub fn random(width: i32, height: i32) -> Self {
         let mut rng = rand::thread_rng();
-        // Increased the radius range for bigger circles.
-        Circle {
-            center: Point::random(width, height),
-            radius: rng.gen_range(50..150),
+        let mut circles = Vec::new();
+        
+        for _ in 0..rng.gen_range(1..2) {
+            circles.push((
+                Point::random(width, height),
+                rng.gen_range(50..150)
+            ));
         }
+        
+        Circle { circles }
     }
 }
 
 impl Drawable for Circle {
-    fn draw(&self, image: &mut Image, color: &Color) {
-        let mut x = self.radius;
-        let mut y = 0;
-        let mut err = 0;
+    fn draw(&self, image: &mut Image) {
+        for (center, radius) in &self.circles {
+            let color = Color::rgb(
+                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(50..200),
+            );
+            
+            let mut x = *radius;
+            let mut y = 0;
+            let mut err = 0;
 
-        while x >= y {
-            let cx = self.center.x;
-            let cy = self.center.y;
-            for (dx, dy) in &[
-                (x, y),
-                (y, x),
-                (-y, x),
-                (-x, y),
-                (-x, -y),
-                (-y, -x),
-                (y, -x),
-                (x, -y),
-            ] {
-                image.display(cx + dx, cy + dy, color);
-            }
-            y += 1;
-            if err <= 0 {
-                err += 2 * y + 1;
-            } else {
-                x -= 1;
-                err += 2 * (y - x + 1);
+            while x >= y {
+                for (dx, dy) in &[
+                    (x, y), (y, x), (-y, x), (-x, y),
+                    (-x, -y), (-y, -x), (y, -x), (x, -y)
+                ] {
+                    image.display(center.x + dx, center.y + dy, color.clone());
+                }
+                
+                y += 1;
+                err += 1 + 2*y;
+                if 2*(err - x) + 1 > 0 {
+                    x -= 1;
+                    err += 1 - 2*x;
+                }
             }
         }
     }
