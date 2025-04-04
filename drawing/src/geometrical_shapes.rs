@@ -144,6 +144,8 @@ pub struct Circle {
 }
 
 impl Circle {
+    // Allow dead code since this function is not currently used.
+    #[allow(dead_code)]
     pub fn new(center: &Point, radius: i32) -> Self {
         Circle {
             center: center.clone(),

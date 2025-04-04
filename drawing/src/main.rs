@@ -1,3 +1,5 @@
+#![allow(future_incompatible)]
+
 mod geometrical_shapes;
 
 use geometrical_shapes::*;
@@ -11,7 +13,7 @@ fn main() {
 
     let mut rng = rand::thread_rng();
 
-    // Draw 100 shapes; each iteration computes a new random shape type.
+    // Draw 100 shapes with a balanced distribution.
     for _ in 0..100 {
         let color = random_color(&mut rng);
         let shape_choice = rng.gen_range(0..10);
@@ -29,7 +31,7 @@ fn main() {
                 let c = Point::random(width, height);
                 Triangle::new(&a, &b, &c).draw(&mut image, &color);
             }
-            // Increase chance for circles.
+            // More chance for circles.
             4 | 5 | 6 | 7 | 8 | 9 => {
                 Circle::random(width, height).draw(&mut image, &color);
             }
