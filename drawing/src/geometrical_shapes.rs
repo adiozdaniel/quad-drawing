@@ -163,18 +163,21 @@ impl Drawable for Rectangle {
     fn draw(&self, image: &mut Image) {
         for (p1, p2) in &self.rects {
             let color = Color::rgb(
-                rand::thread_rng().gen_range(50..200),
-                rand::thread_rng().gen_range(50..200),
-                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(100..255),
+                rand::thread_rng().gen_range(100..255),
+                rand::thread_rng().gen_range(100..255),
             );
-            
-            let top_right = Point::new(p2.x, p1.y);
-            let bottom_left = Point::new(p1.x, p2.y);
-            
-            Line::new(p1, &top_right).draw(image);
-            Line::new(&top_right, p2).draw(image);
-            Line::new(p2, &bottom_left).draw(image);
-            Line::new(&bottom_left, p1).draw(image);
+
+            for i in 0..3 {  
+                let offset = i - 1;
+                let top_right = Point::new(p2.x + offset, p1.y);
+                let bottom_left = Point::new(p1.x, p2.y + offset);
+                
+                Line::from_points(p1, &top_right).draw(image);
+                Line::from_points(&top_right, p2).draw(image);
+                Line::from_points(p2, &bottom_left).draw(image);
+                Line::from_points(&bottom_left, p1).draw(image);
+            }
         }
     }
 }
@@ -188,7 +191,6 @@ impl Triangle {
         let mut rng = rand::thread_rng();
         let mut tris = Vec::new();
         
-        // Generate 2-3 random triangles at different positions
         for _ in 0..rng.gen_range(2..4) {
             let base = Point::random(800, 800);
             let height = rng.gen_range(80..180);
@@ -209,14 +211,21 @@ impl Drawable for Triangle {
     fn draw(&self, image: &mut Image) {
         for (a, b, c) in &self.tris {
             let color = Color::rgb(
-                rand::thread_rng().gen_range(50..200),
-                rand::thread_rng().gen_range(50..200),
-                rand::thread_rng().gen_range(50..200),
+                rand::thread_rng().gen_range(150..255),
+                rand::thread_rng().gen_range(150..255),
+                rand::thread_rng().gen_range(150..255),
             );
-            
-            Line::new(a, b).draw(image);
-            Line::new(b, c).draw(image);
-            Line::new(c, a).draw(image);
+
+            for i in 0..3 {
+                let offset = i - 1;
+                let a_offset = Point::new(a.x + offset, a.y + offset);
+                let b_offset = Point::new(b.x + offset, b.y);
+                let c_offset = Point::new(c.x, c.y + offset);
+                
+                Line::from_points(&a_offset, &b_offset).draw(image);
+                Line::from_points(&b_offset, &c_offset).draw(image);
+                Line::from_points(&c_offset, &a_offset).draw(image);
+            }
         }
     }
 }
