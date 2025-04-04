@@ -2,17 +2,15 @@ use raster::{Color, Image};
 use rand::Rng;
 
 pub trait Drawable {
-    fn draw(&self, image: &mut Image);
-    fn color(&self) -> Color {
-        Color::rgb(0, 0, 0) // default: black
-    }
+    fn draw(&self, image: &mut Image, color: &Color);
 }
 
 pub trait Displayable {
-    fn display(&mut self, x: i32, y: i32, color: Color);
+    fn display(&mut self, x: i32, y: i32, color: &Color);
 }
 
 // Point
+#[derive(Clone)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -33,12 +31,8 @@ impl Point {
 }
 
 impl Drawable for Point {
-    fn draw(&self, image: &mut Image) {
-        image.display(self.x, self.y, self.color());
-    }
-
-    fn color(&self) -> Color {
-        Color::rgb(255, 0, 0) // red
+    fn draw(&self, image: &mut Image, color: &Color) {
+        image.display(self.x, self.y, color);
     }
 }
 
@@ -51,8 +45,8 @@ pub struct Line {
 impl Line {
     pub fn new(p1: &Point, p2: &Point) -> Self {
         Line {
-            start: Point::new(p1.x, p1.y),
-            end: Point::new(p2.x, p2.y),
+            start: p1.clone(),
+            end: p2.clone(),
         }
     }
 
@@ -64,7 +58,7 @@ impl Line {
 }
 
 impl Drawable for Line {
-    fn draw(&self, image: &mut Image) {
+    fn draw(&self, image: &mut Image, color: &Color) {
         let dx = (self.end.x - self.start.x).abs();
         let dy = (self.end.y - self.start.y).abs();
         let sx = if self.start.x < self.end.x { 1 } else { -1 };
@@ -74,7 +68,7 @@ impl Drawable for Line {
         let (mut x, mut y) = (self.start.x, self.start.y);
 
         loop {
-            image.display(x, y, self.color());
+            image.display(x, y, color);
             if x == self.end.x && y == self.end.y {
                 break;
             }
@@ -88,10 +82,6 @@ impl Drawable for Line {
                 y += sy;
             }
         }
-    }
-
-    fn color(&self) -> Color {
-        Color::rgb(0, 255, 0) // green
     }
 }
 
@@ -111,18 +101,14 @@ impl Rectangle {
 }
 
 impl Drawable for Rectangle {
-    fn draw(&self, image: &mut Image) {
+    fn draw(&self, image: &mut Image, color: &Color) {
         let top_right = Point::new(self.bottom_right.x, self.top_left.y);
         let bottom_left = Point::new(self.top_left.x, self.bottom_right.y);
 
-        Line::new(&self.top_left, &top_right).draw(image);
-        Line::new(&top_right, &self.bottom_right).draw(image);
-        Line::new(&self.bottom_right, &bottom_left).draw(image);
-        Line::new(&bottom_left, &self.top_left).draw(image);
-    }
-
-    fn color(&self) -> Color {
-        Color::rgb(0, 0, 255) // blue
+        Line::new(&self.top_left, &top_right).draw(image, color);
+        Line::new(&top_right, &self.bottom_right).draw(image, color);
+        Line::new(&self.bottom_right, &bottom_left).draw(image, color);
+        Line::new(&bottom_left, &self.top_left).draw(image, color);
     }
 }
 
@@ -136,22 +122,18 @@ pub struct Triangle {
 impl Triangle {
     pub fn new(a: &Point, b: &Point, c: &Point) -> Self {
         Triangle {
-            a: Point::new(a.x, a.y),
-            b: Point::new(b.x, b.y),
-            c: Point::new(c.x, c.y),
+            a: a.clone(),
+            b: b.clone(),
+            c: c.clone(),
         }
     }
 }
 
 impl Drawable for Triangle {
-    fn draw(&self, image: &mut Image) {
-        Line::new(&self.a, &self.b).draw(image);
-        Line::new(&self.b, &self.c).draw(image);
-        Line::new(&self.c, &self.a).draw(image);
-    }
-
-    fn color(&self) -> Color {
-        Color::rgb(255, 255, 0) // yellow
+    fn draw(&self, image: &mut Image, color: &Color) {
+        Line::new(&self.a, &self.b).draw(image, color);
+        Line::new(&self.b, &self.c).draw(image, color);
+        Line::new(&self.c, &self.a).draw(image, color);
     }
 }
 
@@ -164,22 +146,23 @@ pub struct Circle {
 impl Circle {
     pub fn new(center: &Point, radius: i32) -> Self {
         Circle {
-            center: Point::new(center.x, center.y),
+            center: center.clone(),
             radius,
         }
     }
 
     pub fn random(width: i32, height: i32) -> Self {
         let mut rng = rand::thread_rng();
+        // Increased the radius range for bigger circles.
         Circle {
             center: Point::random(width, height),
-            radius: rng.gen_range(5..50),
+            radius: rng.gen_range(50..150),
         }
     }
 }
 
 impl Drawable for Circle {
-    fn draw(&self, image: &mut Image) {
+    fn draw(&self, image: &mut Image, color: &Color) {
         let mut x = self.radius;
         let mut y = 0;
         let mut err = 0;
@@ -197,7 +180,7 @@ impl Drawable for Circle {
                 (y, -x),
                 (x, -y),
             ] {
-                image.display(cx + dx, cy + dy, self.color());
+                image.display(cx + dx, cy + dy, color);
             }
             y += 1;
             if err <= 0 {
@@ -207,9 +190,5 @@ impl Drawable for Circle {
                 err += 2 * (y - x + 1);
             }
         }
-    }
-
-    fn color(&self) -> Color {
-        Color::rgb(255, 105, 180) // pink
     }
 }
