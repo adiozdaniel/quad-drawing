@@ -132,3 +132,51 @@ impl Line {
             finish_point: finish_point};
     }
 }
+
+
+pub struct Triangle {
+    pub first_point: Point,
+    pub second_point: Point,
+    pub third_point: Point,
+}
+
+impl Drawable for Triangle{
+    fn draw(&mut self, canva: &mut Image) {
+        let mut first_line = Line::new(self.first_point.clone(), self.second_point.clone());
+        let mut second_line = Line::new(self.second_point.clone(), self.third_point.clone());
+        let mut third_line = Line::new(self.third_point.clone(), self.first_point.clone());
+
+
+        first_line.draw(canva);
+        second_line.draw(canva);
+        third_line.draw(canva);
+    }
+
+    fn color() -> Color {
+        let mut rng = rand::thread_rng();
+
+        let r = rng.gen_range(0, 255);
+        let g = rng.gen_range(0, 255);
+        let b = rng.gen_range(0, 255);
+
+        return Color::rgb(r, g, b);
+    }
+}
+
+impl Triangle {
+    pub fn new(first_p: &Point, second_p: &Point, third_p: &Point) -> Self{
+        Self {
+            first_point: first_p.clone(),
+            second_point: second_p.clone(),
+            third_point: third_p.clone(),
+        }
+    }
+}
+
+impl Displayable for Image {
+    fn display(canva: &mut Image, x: i32, y: i32, color: Color) {
+        if x >= 0 && x < canva.width && y >= 0 && y < canva.height {
+            canva.set_pixel(x, y, color).unwrap();
+        }
+    }
+}
