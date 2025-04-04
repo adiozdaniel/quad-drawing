@@ -9,7 +9,7 @@ pub trait Displayable {
     fn display(&mut self, x: i32, y: i32, color: Color);
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -292,6 +292,63 @@ impl Drawable for Circle {
                     x -= 1;
                     err += 1 - 2*x;
                 }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Pentagon {
+    pub center: Point,
+    pub radius: i32,
+}
+
+impl Pentagon {
+    pub fn new(center: Point, radius: i32) -> Self {
+        Pentagon { center, radius }
+    }
+
+    pub fn random(width: i32, height: i32) -> Self {
+        let mut rng = rand::thread_rng();
+        Pentagon {
+            center: Point::random(width, height),
+            radius: rng.gen_range(30..100),
+        }
+    }
+
+    fn get_vertices(&self) -> Vec<Point> {
+        (0..5).map(|i| {
+            let angle = 2.0 * std::f64::consts::PI * i as f64 / 5.0;
+            Point {
+                x: self.center.x + (self.radius as f64 * angle.cos()) as i32,
+                y: self.center.y + (self.radius as f64 * angle.sin()) as i32,
+            }
+        }).collect()
+    }
+}
+
+impl Drawable for Pentagon {
+    fn draw(&self, image: &mut Image) {
+        let vertices = self.get_vertices();
+        let color = Color::rgb(
+            rand::thread_rng().gen_range(150..255),
+            rand::thread_rng().gen_range(150..255),
+            rand::thread_rng().gen_range(150..255),
+        );
+
+        for i in 0..5 {
+            let start = &vertices[i];
+            let end = &vertices[(i + 1) % 5];
+            
+            // Draw with thickness
+            for offset in -1..=1 {
+                let adjusted_start = Point::new(start.x + offset, start.y);
+                let adjusted_end = Point::new(end.x + offset, end.y);
+                Line::from_points(&adjusted_start, &adjusted_end).draw(image);
+                
+                let adjusted_start = Point::new(start.x, start.y + offset);
+                let adjusted_end = Point::new(end.x, end.y + offset);
+                Line::from_points(&adjusted_start, &adjusted_end).draw(image);
             }
         }
     }
