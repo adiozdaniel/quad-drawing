@@ -1,2 +1,5 @@
 # ignore build files
 target/
+
+# ignore generated files
+drawing/image.png
