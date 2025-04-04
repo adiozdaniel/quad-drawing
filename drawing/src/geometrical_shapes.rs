@@ -299,29 +299,46 @@ impl Drawable for Circle {
 
 #[derive(Debug)]
 pub struct Pentagon {
-    pub center: Point,
-    pub radius: i32,
+    pentagons: Vec<(Point, i32)>,
 }
 
 impl Pentagon {
-    pub fn new(center: Point, radius: i32) -> Self {
-        Pentagon { center, radius }
+    pub fn new(center: &Point, radius: i32) -> Self {
+        let mut rng = rand::thread_rng();
+        let mut pentagons = Vec::new();
+        
+        for _ in 0..rng.gen_range(3..6) {
+            let offset_x = rng.gen_range(-100..100);
+            let offset_y = rng.gen_range(-100..100);
+            pentagons.push((
+                Point::new(center.x + offset_x, center.y + offset_y),
+                rng.gen_range(radius-20..radius+20).max(10)
+            ));
+        }
+        
+        Pentagon { pentagons }
     }
 
     pub fn random(width: i32, height: i32) -> Self {
         let mut rng = rand::thread_rng();
-        Pentagon {
-            center: Point::random(width, height),
-            radius: rng.gen_range(30..100),
+        let mut pentagons = Vec::new();
+        
+        for _ in 0..rng.gen_range(3..6) {
+            pentagons.push((
+                Point::random(width, height),
+                rng.gen_range(30..80)
+            ));
         }
+        
+        Pentagon { pentagons }
     }
 
-    fn get_vertices(&self) -> Vec<Point> {
+    fn get_vertices(center: &Point, radius: i32) -> Vec<Point> {
         (0..5).map(|i| {
             let angle = 2.0 * std::f64::consts::PI * i as f64 / 5.0;
             Point {
-                x: self.center.x + (self.radius as f64 * angle.cos()) as i32,
-                y: self.center.y + (self.radius as f64 * angle.sin()) as i32,
+                x: center.x + (radius as f64 * angle.cos()) as i32,
+                y: center.y + (radius as f64 * angle.sin()) as i32,
             }
         }).collect()
     }
@@ -329,26 +346,26 @@ impl Pentagon {
 
 impl Drawable for Pentagon {
     fn draw(&self, image: &mut Image) {
-        let vertices = self.get_vertices();
-        let color = Color::rgb(
-            rand::thread_rng().gen_range(150..255),
-            rand::thread_rng().gen_range(150..255),
-            rand::thread_rng().gen_range(150..255),
-        );
+        for (center, radius) in &self.pentagons {
+            let color = Color::rgb(
+                rand::thread_rng().gen_range(150..255),
+                rand::thread_rng().gen_range(150..255),
+                rand::thread_rng().gen_range(150..255),
+            );
 
-        for i in 0..5 {
-            let start = &vertices[i];
-            let end = &vertices[(i + 1) % 5];
+            let vertices = Pentagon::get_vertices(center, *radius);
             
-            // Draw with thickness
-            for offset in -1..=1 {
-                let adjusted_start = Point::new(start.x + offset, start.y);
-                let adjusted_end = Point::new(end.x + offset, end.y);
-                Line::from_points(&adjusted_start, &adjusted_end).draw(image);
+            // Draw each side with thickness
+            for i in 0..5 {
+                let start = &vertices[i];
+                let end = &vertices[(i + 1) % 5];
                 
-                let adjusted_start = Point::new(start.x, start.y + offset);
-                let adjusted_end = Point::new(end.x, end.y + offset);
-                Line::from_points(&adjusted_start, &adjusted_end).draw(image);
+                // Draw 3 parallel lines for thickness
+                for offset in -1..=1 {
+                    let adjusted_start = Point::new(start.x + offset, start.y + offset);
+                    let adjusted_end = Point::new(end.x + offset, end.y + offset);
+                    Line::from_points(&adjusted_start, &adjusted_end).draw(image);
+                }
             }
         }
     }
