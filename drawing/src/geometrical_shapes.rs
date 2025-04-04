@@ -1,182 +1,215 @@
-use rand::Rng;
 use raster::{Color, Image};
+use rand::Rng;
 
 pub trait Drawable {
-    fn draw(&mut self, canva: &mut Image);
-    fn color() -> Color;
+    fn draw(&self, image: &mut Image);
+    fn color(&self) -> Color {
+        Color::rgb(0, 0, 0) // default: black
+    }
 }
 
 pub trait Displayable {
-    fn display(canva: &mut Image, x: i32, y: i32, color: Color);
+    fn display(&mut self, x: i32, y: i32, color: Color);
 }
 
-#[derive(Debug, Eq, PartialEq)]
-
+// Point
 pub struct Point {
     pub x: i32,
     pub y: i32,
 }
 
 impl Point {
-    pub fn new(x_coord: i32, y_coord: i32) -> Self {
-        Self {
-            x: x_coord,
-            y: y_coord,
+    pub fn new(x: i32, y: i32) -> Self {
+        Point { x, y }
+    }
+
+    pub fn random(width: i32, height: i32) -> Self {
+        let mut rng = rand::thread_rng();
+        Point {
+            x: rng.gen_range(0..width),
+            y: rng.gen_range(0..height),
         }
     }
-
-    pub fn clone(&self) -> Point {
-        return Point {
-            x: self.x,
-            y: self.y,
-        };
-    }
-
-    pub fn random(width: i32, height: i32) -> Point {
-        let mut rng = rand::thread_rng();
-        return Point { x: rng.gen_range(0, width+1), 
-            y: rng.gen_range(0, height)};
-    }
-
 }
 
-impl Drawable for Point{
-    fn color() -> Color {
-        let mut rng = rand::thread_rng();
-
-        let r = rng.gen_range(1, 255);
-        let g = rng.gen_range(1, 255);
-        let b = rng.gen_range(1, 255);
-
-        return Color::rgb(r, g, b);
+impl Drawable for Point {
+    fn draw(&self, image: &mut Image) {
+        image.display(self.x, self.y, self.color());
     }
 
-    fn draw(&mut self, canva: &mut Image){
-        Image::display(canva, self.x, self.y, Point::color())
+    fn color(&self) -> Color {
+        Color::rgb(255, 0, 0) // red
     }
 }
 
-
-#[derive(Debug, Eq, PartialEq)]
+// Line
 pub struct Line {
-    pub start_point: Point,
-    pub finish_point: Point,
-}
-
-impl Drawable for Line {
-    fn draw(&mut self, canva: &mut Image) {
-        let color = Line::color();
-
-        let mut cur_point = self.start_point.clone();
-        let finish_point = &self.finish_point;
-
-        let dx = (finish_point.x - cur_point.x).abs();
-        let dy = (finish_point.y - cur_point.y).abs();
-
-        let mut pk = 2 * dy - dx;
-
-        for _i in 0..(dx + 1) {
-            Image::display(canva, cur_point.x, cur_point.y, 
-                Color::rgb(self.r, self.g, self.b));
-
-            if cur_point.x < finish_point.x {
-                cur_point.x += 1;
-            } else {
-                cur_point.x -= 1;
-            }
-
-            if pk < 0 {
-                if dx > dy {
-                    pk = pk + 2 * dy;
-                } else {
-                    pk = pk + 2 * dx;
-                }
-            } else {
-                if cur_point.y < finish_point.y {
-                    cur_point.y += 1;
-                } else {
-                    cur_point.y -= 1;
-                }
-                pk = pk + 2 * dy - 2 * dx;
-            }
-        }
-    }
-
-    fn color() -> Color {
-        let mut rng = rand::thread_rng();
-
-        let r = rng.gen_range(1, 255);
-        let g = rng.gen_range(1, 255);
-        let b = rng.gen_range(1, 255);
-
-        return Color::rgb(r, g, b);
-    }
+    start: Point,
+    end: Point,
 }
 
 impl Line {
-    pub fn random(width: i32, height: i32) -> Line {
-        let mut rng = rand::thread_rng();
-
-        let first_point: Point =
-            Point::new(rng.gen_range(1, width + 1), rng.gen_range(1, height + 1));
-        let second_point: Point =
-            Point::new(rng.gen_range(1, width + 1), rng.gen_range(1, height + 1));
-
-        return Line {
-            start_point: first_point,
-            finish_point: second_point,
-        };
+    pub fn new(p1: &Point, p2: &Point) -> Self {
+        Line {
+            start: Point::new(p1.x, p1.y),
+            end: Point::new(p2.x, p2.y),
+        }
     }
-    pub fn new(start_point: Point, finish_point: Point) -> Line {
-        return Line { start_point: start_point, 
-            finish_point: finish_point};
+
+    pub fn random(width: i32, height: i32) -> Self {
+        let p1 = Point::random(width, height);
+        let p2 = Point::random(width, height);
+        Line::new(&p1, &p2)
     }
 }
 
+impl Drawable for Line {
+    fn draw(&self, image: &mut Image) {
+        let dx = (self.end.x - self.start.x).abs();
+        let dy = (self.end.y - self.start.y).abs();
+        let sx = if self.start.x < self.end.x { 1 } else { -1 };
+        let sy = if self.start.y < self.end.y { 1 } else { -1 };
+        let mut err = dx - dy;
 
+        let (mut x, mut y) = (self.start.x, self.start.y);
+
+        loop {
+            image.display(x, y, self.color());
+            if x == self.end.x && y == self.end.y {
+                break;
+            }
+            let e2 = 2 * err;
+            if e2 > -dy {
+                err -= dy;
+                x += sx;
+            }
+            if e2 < dx {
+                err += dx;
+                y += sy;
+            }
+        }
+    }
+
+    fn color(&self) -> Color {
+        Color::rgb(0, 255, 0) // green
+    }
+}
+
+// Rectangle
+pub struct Rectangle {
+    top_left: Point,
+    bottom_right: Point,
+}
+
+impl Rectangle {
+    pub fn new(p1: &Point, p2: &Point) -> Self {
+        Rectangle {
+            top_left: Point::new(p1.x.min(p2.x), p1.y.min(p2.y)),
+            bottom_right: Point::new(p1.x.max(p2.x), p1.y.max(p2.y)),
+        }
+    }
+}
+
+impl Drawable for Rectangle {
+    fn draw(&self, image: &mut Image) {
+        let top_right = Point::new(self.bottom_right.x, self.top_left.y);
+        let bottom_left = Point::new(self.top_left.x, self.bottom_right.y);
+
+        Line::new(&self.top_left, &top_right).draw(image);
+        Line::new(&top_right, &self.bottom_right).draw(image);
+        Line::new(&self.bottom_right, &bottom_left).draw(image);
+        Line::new(&bottom_left, &self.top_left).draw(image);
+    }
+
+    fn color(&self) -> Color {
+        Color::rgb(0, 0, 255) // blue
+    }
+}
+
+// Triangle
 pub struct Triangle {
-    pub first_point: Point,
-    pub second_point: Point,
-    pub third_point: Point,
-}
-
-impl Drawable for Triangle{
-    fn draw(&mut self, canva: &mut Image) {
-        let mut first_line = Line::new(self.first_point.clone(), self.second_point.clone());
-        let mut second_line = Line::new(self.second_point.clone(), self.third_point.clone());
-        let mut third_line = Line::new(self.third_point.clone(), self.first_point.clone());
-
-
-        first_line.draw(canva);
-        second_line.draw(canva);
-        third_line.draw(canva);
-    }
-
-    fn color() -> Color {
-        let mut rng = rand::thread_rng();
-
-        let r = rng.gen_range(0, 255);
-        let g = rng.gen_range(0, 255);
-        let b = rng.gen_range(0, 255);
-
-        return Color::rgb(r, g, b);
-    }
+    a: Point,
+    b: Point,
+    c: Point,
 }
 
 impl Triangle {
-    pub fn new(first_p: &Point, second_p: &Point, third_p: &Point) -> Self{
-        Self {
-            first_point: first_p.clone(),
-            second_point: second_p.clone(),
-            third_point: third_p.clone(),
+    pub fn new(a: &Point, b: &Point, c: &Point) -> Self {
+        Triangle {
+            a: Point::new(a.x, a.y),
+            b: Point::new(b.x, b.y),
+            c: Point::new(c.x, c.y),
         }
     }
 }
 
-impl Displayable for Image {
-    fn display(canva: &mut Image, x: i32, y: i32, color: Color) {
-        if x >= 0 && x < canva.width && y >= 0 && y < canva.height {
-            canva.set_pixel(x, y, color).unwrap();
+impl Drawable for Triangle {
+    fn draw(&self, image: &mut Image) {
+        Line::new(&self.a, &self.b).draw(image);
+        Line::new(&self.b, &self.c).draw(image);
+        Line::new(&self.c, &self.a).draw(image);
+    }
+
+    fn color(&self) -> Color {
+        Color::rgb(255, 255, 0) // yellow
+    }
+}
+
+// Circle
+pub struct Circle {
+    center: Point,
+    radius: i32,
+}
+
+impl Circle {
+    pub fn new(center: &Point, radius: i32) -> Self {
+        Circle {
+            center: Point::new(center.x, center.y),
+            radius,
         }
+    }
+
+    pub fn random(width: i32, height: i32) -> Self {
+        let mut rng = rand::thread_rng();
+        Circle {
+            center: Point::random(width, height),
+            radius: rng.gen_range(5..50),
+        }
+    }
+}
+
+impl Drawable for Circle {
+    fn draw(&self, image: &mut Image) {
+        let mut x = self.radius;
+        let mut y = 0;
+        let mut err = 0;
+
+        while x >= y {
+            let cx = self.center.x;
+            let cy = self.center.y;
+            for (dx, dy) in &[
+                (x, y),
+                (y, x),
+                (-y, x),
+                (-x, y),
+                (-x, -y),
+                (-y, -x),
+                (y, -x),
+                (x, -y),
+            ] {
+                image.display(cx + dx, cy + dy, self.color());
+            }
+            y += 1;
+            if err <= 0 {
+                err += 2 * y + 1;
+            } else {
+                x -= 1;
+                err += 2 * (y - x + 1);
+            }
+        }
+    }
+
+    fn color(&self) -> Color {
+        Color::rgb(255, 105, 180) // pink
     }
 }
