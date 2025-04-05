@@ -5,8 +5,7 @@ use rand::Rng;
 
 #[derive(Debug)]
 pub struct Cubes {
-    cubes: Vec<(Point, i32)>,
-    pub color: Color,
+    cubes: Vec<(Point, i32, Color)>,
 }
 
 impl Cubes {
@@ -14,44 +13,44 @@ impl Cubes {
         let mut rng = rand::thread_rng();
         let mut cubes = Vec::new();
         
+        let base_color = Color::rgb(
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+        );
+
         for _ in 0..rng.gen_range(3..6) {
             let offset_x = rng.gen_range(-size..size);
             let offset_y = rng.gen_range(-size..size);
             cubes.push((
                 Point::new(position.x + offset_x, position.y + offset_y),
-                rng.gen_range(size/2..size*3/2).max(20)
+                rng.gen_range(size/2..size*3/2).max(20),
+                base_color.clone()
             ));
         }
         
-        Cubes {
-            cubes,
-            color: Color::rgb(
-                rng.gen_range(150..255),
-                rng.gen_range(150..255),
-                rng.gen_range(150..255),
-            ),
-        }
+        Cubes { cubes }
     }
 
     pub fn random(width: i32, height: i32) -> Self {
         let mut rng = rand::thread_rng();
         let mut cubes = Vec::new();
         
+        let base_color = Color::rgb(
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+        );
+
         for _ in 0..rng.gen_range(3..6) {
             cubes.push((
                 Point::random(width, height),
-                rng.gen_range(30..80)
+                rng.gen_range(30..80),
+                base_color.clone()
             ));
         }
         
-        Cubes {
-            cubes,
-            color: Color::rgb(
-                rng.gen_range(150..255),
-                rng.gen_range(150..255),
-                rng.gen_range(150..255),
-            ),
-        }
+        Cubes { cubes }
     }
 
     fn get_isometric_projection(center: &Point, size: i32) -> [Point; 8] {
@@ -74,7 +73,7 @@ impl Cubes {
 
 impl Drawable for Cubes {
     fn draw(&self, image: &mut Image) {
-        for (center, size) in &self.cubes {
+        for (center, size, color) in &self.cubes {
             let vertices = Cubes::get_isometric_projection(center, *size);
             
             let edges = [
@@ -94,5 +93,9 @@ impl Drawable for Cubes {
                 }
             }
         }
+    }
+
+    fn color(&self) -> Color {
+        self.cubes[0].2.clone()
     }
 }

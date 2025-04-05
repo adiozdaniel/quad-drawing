@@ -6,7 +6,7 @@ use std::f64::consts::PI;
 
 #[derive(Debug)]
 pub struct Pentagon {
-    pentagons: Vec<(Point, i32)>,
+    pentagons: Vec<(Point, i32, Color)>,
 }
 
 impl Pentagon {
@@ -14,12 +14,19 @@ impl Pentagon {
         let mut rng = rand::thread_rng();
         let mut pentagons = Vec::new();
         
+        let base_color = Color::rgb(
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+        );
+
         for _ in 0..rng.gen_range(3..6) {
             let offset_x = rng.gen_range(-100..100);
             let offset_y = rng.gen_range(-100..100);
             pentagons.push((
                 Point::new(center.x + offset_x, center.y + offset_y),
-                rng.gen_range(radius-20..radius+20).max(10)
+                rng.gen_range(radius-20..radius+20).max(10),
+                base_color.clone()
             ));
         }
         
@@ -30,10 +37,17 @@ impl Pentagon {
         let mut rng = rand::thread_rng();
         let mut pentagons = Vec::new();
         
+        let base_color = Color::rgb(
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+            rng.gen_range(150..255),
+        );
+
         for _ in 0..rng.gen_range(3..6) {
             pentagons.push((
                 Point::random(width, height),
-                rng.gen_range(30..80)
+                rng.gen_range(30..80),
+                base_color.clone()
             ));
         }
         
@@ -43,23 +57,17 @@ impl Pentagon {
     fn get_vertices(center: &Point, radius: i32) -> Vec<Point> {
         (0..5).map(|i| {
             let angle = 2.0 * PI * i as f64 / 5.0;
-            Point {
-                x: center.x + (radius as f64 * angle.cos()) as i32,
-                y: center.y + (radius as f64 * angle.sin()) as i32,
-            }
+            Point::new(
+                center.x + (radius as f64 * angle.cos()) as i32,
+                center.y + (radius as f64 * angle.sin()) as i32
+            )
         }).collect()
     }
 }
 
 impl Drawable for Pentagon {
     fn draw(&self, image: &mut Image) {
-        for (center, radius) in &self.pentagons {
-            let color = Color::rgb(
-                rand::thread_rng().gen_range(150..255),
-                rand::thread_rng().gen_range(150..255),
-                rand::thread_rng().gen_range(150..255),
-            );
-
+        for (center, radius, color) in &self.pentagons {
             let vertices = Pentagon::get_vertices(center, *radius);
             
             for i in 0..5 {
@@ -73,5 +81,9 @@ impl Drawable for Pentagon {
                 }
             }
         }
+    }
+
+    fn color(&self) -> Color {
+        self.pentagons[0].2.clone()
     }
 }

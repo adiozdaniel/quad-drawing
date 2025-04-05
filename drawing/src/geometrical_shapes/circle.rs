@@ -4,7 +4,7 @@ use raster::{Color, Image};
 use rand::Rng;
 
 pub struct Circle {
-    circles: Vec<(Point, i32)>,
+    circles: Vec<(Point, i32, Color)>,
 }
 
 impl Circle {
@@ -15,7 +15,12 @@ impl Circle {
         for _ in 0..rng.gen_range(1..2) {
             circles.push((
                 Point::random(900, 900),
-                rng.gen_range(50..150)
+                rng.gen_range(50..150),
+                Color::rgb(
+                    rng.gen_range(50..200),
+                    rng.gen_range(50..200),
+                    rng.gen_range(50..200),
+                )
             ));
         }
         
@@ -29,7 +34,12 @@ impl Circle {
         for _ in 0..rng.gen_range(1..2) {
             circles.push((
                 Point::random(width, height),
-                rng.gen_range(50..150)
+                rng.gen_range(50..150),
+                Color::rgb(
+                    rng.gen_range(50..200),
+                    rng.gen_range(50..200),
+                    rng.gen_range(50..200),
+                )
             ));
         }
         
@@ -39,13 +49,7 @@ impl Circle {
 
 impl Drawable for Circle {
     fn draw(&self, image: &mut Image) {
-        for (center, radius) in &self.circles {
-            let color = Color::rgb(
-                rand::thread_rng().gen_range(50..200),
-                rand::thread_rng().gen_range(50..200),
-                rand::thread_rng().gen_range(50..200),
-            );
-            
+        for (center, radius, color) in &self.circles {
             let mut x = *radius;
             let mut y = 0;
             let mut err = 0;
@@ -66,5 +70,9 @@ impl Drawable for Circle {
                 }
             }
         }
+    }
+
+    fn color(&self) -> Color {
+        self.circles[0].2.clone()
     }
 }

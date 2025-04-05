@@ -8,6 +8,7 @@ pub struct Line {
     start: Point,
     end: Point,
     thickness: i32,
+    color: Color,
 }
 
 impl Line {
@@ -32,34 +33,45 @@ impl Line {
             start,
             end,
             thickness: rng.gen_range(2..5),
+            color: Color::rgb(
+                rng.gen_range(50..200),
+                rng.gen_range(50..200),
+                rng.gen_range(50..200),
+            ),
         }
     }
 
     pub fn random(width: i32, height: i32) -> Self {
+        let mut rng = rand::thread_rng();
         Line {
             start: Point::random(width, height),
             end: Point::random(width, height),
-            thickness: rand::thread_rng().gen_range(2..5),
+            thickness: rng.gen_range(2..5),
+            color: Color::rgb(
+                rng.gen_range(50..200),
+                rng.gen_range(50..200),
+                rng.gen_range(50..200),
+            ),
         }
     }
 
     pub fn from_points(p1: &Point, p2: &Point) -> Self {
+        let mut rng = rand::thread_rng();
         Line {
             start: p1.clone(),
             end: p2.clone(),
-            thickness: rand::thread_rng().gen_range(2..5),
+            thickness: rng.gen_range(2..5),
+            color: Color::rgb(
+                rng.gen_range(50..200),
+                rng.gen_range(50..200),
+                rng.gen_range(50..200),
+            ),
         }
     }
 }
 
 impl Drawable for Line {
     fn draw(&self, image: &mut Image) {
-        let color = Color::rgb(
-            rand::thread_rng().gen_range(50..200),
-            rand::thread_rng().gen_range(50..200),
-            rand::thread_rng().gen_range(50..200),
-        );
-        
         for t in 0..self.thickness {
             let offset = t - self.thickness/2;
             let dx = (self.end.x - self.start.x).abs();
@@ -71,9 +83,9 @@ impl Drawable for Line {
             
             loop {
                 if dx > dy {
-                    image.display(x, y + offset, color.clone());
+                    image.display(x, y + offset, self.color.clone());
                 } else {
-                    image.display(x + offset, y, color.clone());
+                    image.display(x + offset, y, self.color.clone());
                 }
                 
                 if x == self.end.x && y == self.end.y { break; }
@@ -82,5 +94,9 @@ impl Drawable for Line {
                 if e2 < dx { err += dx; y += sy; }
             }
         }
+    }
+
+    fn color(&self) -> Color {
+        self.color.clone()
     }
 }

@@ -18,10 +18,9 @@ use raster::{Color, Image};
 
 pub trait Drawable {
     fn draw(&self, image: &mut Image);
+    fn color(&self) -> Color;
 }
 
-// Remove the Displayable trait implementation for Image from here
-// Keep just the trait declaration
 pub trait Displayable {
     fn display(&mut self, x: i32, y: i32, color: Color);
 }
